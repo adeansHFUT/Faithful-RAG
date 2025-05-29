@@ -12,7 +12,7 @@ from faithfulrag import FaithfulRAG  # Adjust import path as needed
 
 async def main():
     # 1. Create sample dataset
-    dataset = load_dataset("json", data_files="/home/xzs/data/experient/Faithful-RAG/datas/faitheval_data.json")
+    dataset = load_dataset("json", data_files="./datas/faitheval_data.json")
     # dataset = dataset['train'].select(range(10))
     dataset = dataset['train']
 
@@ -20,8 +20,8 @@ async def main():
     rag = FaithfulRAG(
         backend_type="llamafactory",          # Using OpenAI backend
         model_name="llama3.1-8b-instruct",
-        similarity_model="/home/xzs/data/model/bge-large-en-v1.5",  # Sentence Transformer model
-        base_url="http://localhost:8001",  # LLaMA Factory API URL
+        similarity_model="bge-large-en-v1.5",  # Sentence Transformer model
+        base_url="http://localhost:8000",  # LLaMA Factory API URL
         api_key="0"   # Replace with your actual key
     )
     
