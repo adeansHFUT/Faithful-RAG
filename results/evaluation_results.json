@@ -1,0 +1,98 @@
+{
+    "num_items": 10,
+    "exact_match": 90.0,
+    "acc": 90.0,
+    "f1": 98.33333333333333,
+    "details": [
+        {
+            "id": "Mercury_7175875",
+            "question": "An astronomer observes that a planet rotates faster after a meteorite impact. Which is the most likely effect of this increase in rotation?",
+            "answer": "Planetary gravity will become stronger.",
+            "prediction": "Planetary gravity will become stronger.",
+            "exact_match": true,
+            "acc": true,
+            "f1": 1.0
+        },
+        {
+            "id": "Mercury_SC_409171",
+            "question": "A group of engineers wanted to know how different building designs would respond during an earthquake. They made several models of buildings and tested each for its ability to withstand earthquake conditions. Which will most likely result from testing different building designs?",
+            "answer": "buildings will be built faster",
+            "prediction": "buildings will be built faster",
+            "exact_match": true,
+            "acc": true,
+            "f1": 1.0
+        },
+        {
+            "id": "Mercury_SC_408547",
+            "question": "The end result in the process of photosynthesis is the production of sugar and oxygen. Which step signals the beginning of photosynthesis?",
+            "answer": "Chemical energy is absorbed through the roots.",
+            "prediction": "Chemical energy is absorbed through the roots.",
+            "exact_match": true,
+            "acc": true,
+            "f1": 1.0
+        },
+        {
+            "id": "Mercury_407327",
+            "question": "A physicist wants to determine the speed a car must reach to jump over a ramp. The physicist conducts three trials. In trials two and three, the speed of the car is increased by 20 miles per hour. What is the physicist investigating when he changes the speed?",
+            "answer": "the dependent (responding) variable",
+            "prediction": "the dependent (responding) variable",
+            "exact_match": true,
+            "acc": true,
+            "f1": 1.0
+        },
+        {
+            "id": "MCAS_2006_9_44",
+            "question": "An astronaut drops a 1.0 kg object and a 5.0 kg object on the Moon. Both objects fall a total distance of 2.0 m vertically. Which of the following best describes the objects after they have fallen a distance of 1.0 m?",
+            "answer": "They have each gained the same amount of potential energy.",
+            "prediction": "They have each gained the same amount of potential energy.",
+            "exact_match": true,
+            "acc": true,
+            "f1": 1.0
+        },
+        {
+            "id": "Mercury_7270393",
+            "question": "Devil facial tumor disease (DFTD) is a disease that is decimating the population of Tasmanian devils. The disease passes from one animal to another through bites and is caused by parasites. The parasites cause cancerous tumors that spread throughout an infected animal's body and kill it. What is the best description of DFTD?",
+            "answer": "a non-infectious, cell-cycle disease",
+            "prediction": "'a non-infectious, cell-cycle disease'",
+            "exact_match": true,
+            "acc": true,
+            "f1": 1.0
+        },
+        {
+            "id": "MCAS_2014_5_7",
+            "question": "A type of small mammal from the mountain regions of the western United States makes its home out of piles of rock. During summer months, the mammal places grasses and seeds in protected places in the rock piles. Which of the following is the most likely reason for this behavior?",
+            "answer": "to repare for migration before winter",
+            "prediction": "to prepare for migration before winter",
+            "exact_match": false,
+            "acc": false,
+            "f1": 0.8333333333333334
+        },
+        {
+            "id": "Mercury_7086660",
+            "question": "Petrified palm trees are found in sedimentary rock near glaciers. The presence of the petrified palm trees most likely provides evidence for which statement?",
+            "answer": "There was once more water in the area.",
+            "prediction": "There was once more water in the area.",
+            "exact_match": true,
+            "acc": true,
+            "f1": 1.0
+        },
+        {
+            "id": "Mercury_7168805",
+            "question": "Farmers in Wyoming were concerned because some of their chickens were being preyed upon by hawks that lived in areas around their ranches. The farmers grouped together and hunted the hawks until they were no longer in their area. Which would most likely happen next?",
+            "answer": "The chickens would have a lower rate of disease.",
+            "prediction": "The chickens would have a lower rate of disease.",
+            "exact_match": true,
+            "acc": true,
+            "f1": 1.0
+        },
+        {
+            "id": "MCAS_2003_8_11",
+            "question": "Copper is an element that is used in electrical wires. What is the smallest unit of copper that still maintains the characteristics of copper?",
+            "answer": "the electron",
+            "prediction": "the electron",
+            "exact_match": true,
+            "acc": true,
+            "f1": 1.0
+        }
+    ]
+}

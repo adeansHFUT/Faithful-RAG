@@ -1,0 +1,73 @@
+# faithful_rag_example.py
+import asyncio
+from datasets import Dataset
+import numpy as np
+import json
+
+# Import your FaithfulRAG implementation
+from faithfulrag import FaithfulRAG  # Adjust import path as needed
+
+async def main():
+    # 1. Create sample dataset
+    with open('/home/xzs/data/experient/Faithful-RAG/datas/faitheval_data.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    dataset = Dataset.from_pandas(data)
+    
+    # 2. Initialize FaithfulRAG pipeline
+    rag = FaithfulRAG(
+        backend_type="openai",          # Using OpenAI backend
+        model_name="gpt-3.5-turbo",
+        similarity_model="all-mpnet-base-v2",  # Sentence Transformer model
+        api_key="your_openai_api_key"   # Replace with your actual key
+    )
+    
+    # 3. Generate self-consistent facts
+    print("Generating self-consistent facts...")
+    self_facts = await rag.get_self_facts(
+        dataset,
+        fact_mining_type="default",
+    )
+    print(f"Generated facts sample: {self_facts[0]['facts'][:1]}\n")
+    
+    # 4. Retrieve top-k contextual chunks
+    print("Retrieving contextual chunks...")
+    topk_chunks = rag.get_topk_chunks(
+        dataset,
+        self_facts
+    )
+    print(f"Top chunks sample: {topk_chunks[0]['topk_chunks'][0]}\n")
+    
+    # 5. Generate predictions
+    print("Generating predictions...")
+    predictions = await rag.get_predictions(
+        dataset,
+        topk_chunks,
+        generation_type="normal_cot",  # Try "scheduled_cot" or "wo_cot"
+        max_tokens=400  # Override generation parameter
+    )
+    print(f"Predictions: {predictions}\n")
+    
+    # 6. Evaluate results
+    print("Evaluating predictions...")
+    evaluation = rag.evaluate(
+        dataset,
+        predictions,
+        detailed_output=True
+    )
+    
+    print("\nEvaluation Results:")
+    print(f"Exact Match: {evaluation['exact_match']:.2f}%")
+    print(f"Accuracy: {evaluation['acc']:.2f}%")
+    print(f"F1 Score: {evaluation['f1']:.2f}%")
+    
+    print("\nDetailed samples:")
+    for detail in evaluation['details'][:1]:
+        print(f"ID: {detail['id']}")
+        print(f"Question: {detail['question']}")
+        print(f"Predicted: {detail['prediction']}")
+        print(f"Actual: {detail['answer']}")
+        print(f"EM: {detail['exact_match']}, Acc: {detail['acc']}, F1: {detail['f1']}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
