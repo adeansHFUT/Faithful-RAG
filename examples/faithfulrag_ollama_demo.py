@@ -1,26 +1,24 @@
 import asyncio
-from datasets import load_dataset, Dataset
+from datasets import Dataset
 import numpy as np
 import json
 import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from faithfulrag import FaithfulRAG
+from faithfulrag import FaithfulRAG 
 
 async def main():
     # 1. Create sample dataset
-    dataset = load_dataset("json", data_files="./datas/faitheval_data.json")
-    # dataset = dataset['train'].select(range(10))
-    dataset = dataset['train']
+    with open('/home/xzs/data/experient/Faithful-RAG/datas/faitheval_data.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
 
+    dataset = Dataset.from_pandas(data)
+    
     # 2. Initialize FaithfulRAG pipeline
     rag = FaithfulRAG(
-        backend_type="llamafactory",          # Using OpenAI backend
-        model_name="llama3.1-8b-instruct",
+        backend_type="ollama",          # Using OpenAI backend
+        model_name="llama3.1",
         similarity_model="bge-large-en-v1.5",  # Sentence Transformer model
-        base_url="http://localhost:8000",  # LLaMA Factory API URL
-        api_key="0"   # Replace with your actual key
+        base_url = 'http://localhost:11434',
     )
     
     # 3. Generate self-consistent facts
@@ -28,15 +26,14 @@ async def main():
     self_facts = await rag.get_self_facts(
         dataset,
         fact_mining_type="default",
-        temperature=0.0  # Override default parameter
     )
-    print(f"Generated facts sample: {self_facts[0]['facts'][0]}\n")
+    print(f"Generated facts sample: {self_facts[0]['facts'][:1]}\n")
     
     # 4. Retrieve top-k contextual chunks
     print("Retrieving contextual chunks...")
     topk_chunks = rag.get_topk_chunks(
         dataset,
-        self_facts,
+        self_facts
     )
     print(f"Top chunks sample: {topk_chunks[0]['topk_chunks'][0]}\n")
     
@@ -45,9 +42,8 @@ async def main():
     predictions = await rag.get_predictions(
         dataset,
         topk_chunks,
-        generation_type="wo_cot",  # Try "scheduled_cot" or "wo_cot"
-        max_tokens=500,  # Override generation parameter,
-        temperature=0.0
+        generation_type="normal_cot",  # Try "scheduled_cot" or "wo_cot"
+        max_tokens=400  # Override generation parameter
     )
     print(f"Predictions: {predictions}\n")
     

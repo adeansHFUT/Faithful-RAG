@@ -15,7 +15,8 @@ class LLMBackend:
     BACKENDS = {
         "openai": None,  # Will be set to openai_complete
         "hf": None,      # Will be set to hf_complete
-        "llamafactory": None  # Will be set to llamafactory_complete
+        "llamafactory": None,  # Will be set to llamafactory_complete
+        "ollama": None  # Will be set to ollama_complete
     }
     
     def __init__(self, backend_type: str, model_name: str, **backend_config):
@@ -23,7 +24,7 @@ class LLMBackend:
         Initialize the LLM backend
         
         Args:
-            backend_type: Type of LLM backend (openai, hf, llamafactory)
+            backend_type: Type of LLM backend (openai, hf, llamafactory, ollama)
             model_name: Name of the model to use
             backend_config: Backend-specific configuration parameters
         """
@@ -48,6 +49,13 @@ class LLMBackend:
                 LLMBackend.BACKENDS["llamafactory"] = llamafactory_complete
             except ImportError:
                 logger.warning("LLaMA Factory module not available")
+        
+        if LLMBackend.BACKENDS["ollama"] is None:
+            try:
+                from .ollama import ollama_complete
+                LLMBackend.BACKENDS["ollama"] = ollama_complete
+            except ImportError:
+                logger.warning("OLLAMA module not available")
         
         # Validate backend type
         if backend_type not in self.BACKENDS:

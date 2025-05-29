@@ -20,7 +20,7 @@ def initialize_openai_client(api_key=None, base_url=None):
     ),
 )
 async def openai_chat_completion(
-    model: str,
+    model_name: str,
     prompt: str,
     system_prompt: str = None,
     history_messages: list = [],
@@ -35,7 +35,7 @@ async def openai_chat_completion(
     messages.append({"role": "user", "content": prompt})
     
     api_params = {
-        "model": model,
+        "model": model_name,
         "messages": messages,
         "max_tokens": kwargs.get("max_tokens", 1000),
         "temperature": kwargs.get("temperature", 0.0),
@@ -56,9 +56,9 @@ async def openai_complete(
     keyword_extraction: bool = False,
     **kwargs
 ) -> str:
-    model = kwargs.pop("model", "gpt-4-turbo")
+    model_name = kwargs.pop("model_name", "gpt-4-turbo")
     result = await openai_chat_completion(
-        model=model,
+        model_name=model_name,
         prompt=prompt,
         system_prompt=system_prompt,
         history_messages=history_messages,

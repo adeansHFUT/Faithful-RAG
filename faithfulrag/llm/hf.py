@@ -161,7 +161,7 @@ async def hf_chat_completion(
             return_tensors="pt", 
             padding=True, 
             truncation=True,
-            max_length=8192  # 防止过长输入
+            max_length=8192  
         ).to(model.device)
         
         stop_token_ids = [tokenizer.eos_token_id]

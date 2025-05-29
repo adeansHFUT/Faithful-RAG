@@ -1,11 +1,10 @@
-# faithful_rag_example.py
 import asyncio
 from datasets import Dataset
 import numpy as np
 import json
+import os
 
-# Import your FaithfulRAG implementation
-from faithfulrag import FaithfulRAG  # Adjust import path as needed
+from faithfulrag import FaithfulRAG 
 
 async def main():
     # 1. Create sample dataset
@@ -60,14 +59,11 @@ async def main():
     print(f"Exact Match: {evaluation['exact_match']:.2f}%")
     print(f"Accuracy: {evaluation['acc']:.2f}%")
     print(f"F1 Score: {evaluation['f1']:.2f}%")
+
+    os.makedirs("results", exist_ok=True)
     
-    print("\nDetailed samples:")
-    for detail in evaluation['details'][:1]:
-        print(f"ID: {detail['id']}")
-        print(f"Question: {detail['question']}")
-        print(f"Predicted: {detail['prediction']}")
-        print(f"Actual: {detail['answer']}")
-        print(f"EM: {detail['exact_match']}, Acc: {detail['acc']}, F1: {detail['f1']}")
+    with open("results/evaluation_results.json", "w") as f:
+        json.dump(evaluation, f, indent=4)
 
 if __name__ == "__main__":
     asyncio.run(main())
