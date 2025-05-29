@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from faithfulrag import FaithfulRAG
 
 async def main():
-    # 1. Create sample dataset
+    # 1. Load dataset
     dataset = load_dataset("json", data_files="./datas/faitheval_data.json")
     # dataset = dataset['train'].select(range(10))
     dataset = dataset['train']

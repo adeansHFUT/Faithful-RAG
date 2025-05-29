@@ -7,7 +7,7 @@ import os
 from faithfulrag import FaithfulRAG 
 
 async def main():
-    # 1. Create sample dataset
+    # 1. Load dataset
     with open('./datas/faitheval_data.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
 

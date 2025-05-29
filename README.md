@@ -10,29 +10,15 @@ Run the following command to install the dependencies:
 ```shell
 pip install -r requirements.txt
 ```
-### 2. Prepare Data
-The datasets used in our paper are located under ./data. If you want to use your own dataset, you need to convert the dataset labels into the following format:
-```json
-{
-    "id": "1",
-    "question": "question",
-    "context": "context",
-    "answer": "ground truth",
-}
-```
-### 3. Quick Start
+### 2. Quick Start
 ```python
 import asyncio
 from datasets import Dataset
 from faithfulrag import FaithfulRAG
 
-# Create sample dataset
-dataset = Dataset.from_dict({
-    'id': ['q1'],
-    'question': ['What is the capital of France?'],
-    'context': ['France is a country in Europe. Its capital is Paris.'],
-    'answer': ['Paris']
-})
+# Load dataset
+dataset = load_dataset("json", data_files="./datas/faitheval_data.json")
+dataset = dataset['train']
 
 # Initialize FaithfulRAG pipeline
 rag = FaithfulRAG(
