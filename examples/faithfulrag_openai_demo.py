@@ -8,7 +8,7 @@ from faithfulrag import FaithfulRAG
 
 async def main():
     # 1. Create sample dataset
-    with open('/home/xzs/data/experient/Faithful-RAG/datas/faitheval_data.json', 'r', encoding='utf-8') as f:
+    with open('./datas/faitheval_data.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     dataset = Dataset.from_pandas(data)
