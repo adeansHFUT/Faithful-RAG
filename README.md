@@ -41,8 +41,7 @@ from datasets import load_dataset
 from faithfulrag import FaithfulRAG
 
 # Load dataset
-ds = load_dataset("eric-xiang/FaithfulRAG-Dataset",split="faitheval_data")
-
+ds = load_dataset("json", data_files="https://huggingface.co/datasets/eric-xiang/FaithfulRAG-Dataset/resolve/main/faithful-data.json", split="train")
 
 # Initialize FaithfulRAG pipeline
 rag = FaithfulRAG(
