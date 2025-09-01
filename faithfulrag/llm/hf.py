@@ -153,6 +153,7 @@ async def hf_chat_completion(
     generation_params.pop("max_tokens", None)
     generation_params.pop("hashing_kv", None)
     generation_params.pop("keyword_extraction", None)
+    generation_params.pop("max_tokens", None)
     
     params.update(generation_params)
     
