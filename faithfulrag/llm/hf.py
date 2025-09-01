@@ -150,6 +150,7 @@ async def hf_chat_completion(
         "eos_token_id": tokenizer.eos_token_id,
     })
     
+    generation_params.pop("max_tokens", None)
     generation_params.pop("hashing_kv", None)
     generation_params.pop("keyword_extraction", None)
     
