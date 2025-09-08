@@ -190,8 +190,8 @@ class FactMiningModule:
         
         # Generate prompts for fact extraction
         prompts = [
-            self.prompt_generator_extract.generate_factual_knowledge(
-                user_query=ctx['context']
+            self.prompt_generator_extract.generate_context_extract(
+                user_context=ctx['context']
             )
             for ctx in contexts
         ]
