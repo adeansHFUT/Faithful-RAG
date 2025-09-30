@@ -17,8 +17,8 @@ from util import logger
 _cached_llamafactory_client: Optional[httpx.AsyncClient] = None
 
 def initialize_llamafactory_client(
-    base_url: str = None,
-    api_key: str = None
+    base_url: Optional[str] = None,
+    api_key: Optional[str] = None
 ) -> httpx.AsyncClient:
     """
     Initialize and reuse a cached LLaMA Factory API client.
@@ -37,17 +37,17 @@ def initialize_llamafactory_client(
         _cached_llamafactory_client = httpx.AsyncClient(
             base_url=base_url,
             headers=headers,
-            timeout=httpx.Timeout(300.0, connect=10.0),
-            limits=httpx.Limits(max_connections=100, max_keepalive_connections=20)
+            timeout=httpx.Timeout(300.0, connect=30.0, pool=60.0),
+            limits=httpx.Limits(max_connections=200, max_keepalive_connections=50)
         )
 
     return _cached_llamafactory_client
 
 @retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=30),
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=2, min=3, max=60),
     retry=retry_if_exception_type(
-        (httpx.ConnectError, httpx.ReadTimeout, httpx.RemoteProtocolError, httpx.PoolTimeout)
+        (httpx.ConnectError, httpx.ReadTimeout, httpx.RemoteProtocolError, httpx.PoolTimeout, httpx.TimeoutException)
     ),
     before_sleep=before_sleep_log(logger, logging.WARNING)
 )
@@ -72,7 +72,10 @@ async def llamafactory_chat_completion(
     Returns:
         Generated text response
     """
-    client = initialize_llamafactory_client(base_url=generation_params.get("base_url"), api_key=generation_params.get("api_key"))
+    client = initialize_llamafactory_client(
+        base_url=generation_params.get("base_url"), 
+        api_key=generation_params.get("api_key")
+    )
     
     # Prepare messages in OpenAI-compatible format
     messages = []
@@ -115,6 +118,9 @@ async def llamafactory_chat_completion(
     except httpx.HTTPStatusError as e:
         logger.error(f"API error: {e.response.status_code} - {e.response.text}")
         raise
+    except httpx.PoolTimeout as e:
+        logger.error(f"Connection pool timeout: {str(e)}. This usually means too many concurrent requests.")
+        raise
     except (httpx.RequestError, httpx.TimeoutException) as e:
         logger.error(f"Network error: {str(e)}")
         raise
@@ -149,6 +155,9 @@ async def llamafactory_complete(
             model_name = kwargs["hashing_kv"]["global_config"]["llm_model_name"]
         else:
             raise ValueError("Model name not provided and not found in config")
+    
+    if not model_name:
+        raise ValueError("Model name is required")
     
     # Call generation function
     result = await llamafactory_chat_completion(

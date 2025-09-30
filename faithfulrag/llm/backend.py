@@ -118,8 +118,16 @@ class LLMBackend:
         # Wrap each prompt in its own coroutine
         tasks = [run_task(prompt) for prompt in prompts]
 
-        # Use tqdm.asyncio.gather to show progress bar
-        results = await tqdm_asyncio.gather(*tasks, desc="Generating", total=len(tasks))
+        # Use tqdm.asyncio.gather to show progress bar with concurrency limit
+        # Limit concurrent requests to avoid overwhelming the server
+        semaphore = asyncio.Semaphore(10)  # Limit to 10 concurrent requests
+        
+        async def limited_task(task):
+            async with semaphore:
+                return await task
+        
+        limited_tasks = [limited_task(task) for task in tasks]
+        results = await tqdm_asyncio.gather(*limited_tasks, desc="Generating", total=len(limited_tasks))
         return results
     
     async def single_generate(
