@@ -156,6 +156,11 @@ async def hf_chat_completion(
     generation_params.pop("max_tokens", None)
     
     params.update(generation_params)
+    temperature = params.get("temperature", None)
+    if temperature is not None and temperature <= 0:
+        params["do_sample"] = False
+        params.pop("temperature", None)  # 贪心/beam 时不需要温度
+    
     
     def _sync_generate():
         inputs = tokenizer(

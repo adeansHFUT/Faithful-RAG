@@ -16,7 +16,7 @@ async def main():
     # 2. Initialize FaithfulRAG pipeline
     rag = FaithfulRAG(
         backend_type="ollama",          # Using OpenAI backend
-        model_name="llama3.1",
+        model_name="qwen2.5-7b",
         similarity_model="bge-large-en-v1.5",  # Sentence Transformer model
         base_url = 'http://localhost:11434',
     )

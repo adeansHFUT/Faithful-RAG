@@ -17,8 +17,8 @@ async def main():
     # 2. Initialize FaithfulRAG pipeline
     rag = FaithfulRAG(
         backend_type="hf",          # Using OpenAI backend
-        model_name="llama3.1-8b-instruct",
-        similarity_model="bge-large-en-v1.5",  # Sentence Transformer model
+        model_name="/share/home/yangjj/models/qwen2.5-7b-instruct",
+        similarity_model="/share/home/yangjj/models/bge-large-en-v1.5",  # Sentence Transformer model
     )
     
     # 3. Generate self-consistent facts
