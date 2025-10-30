@@ -14,10 +14,52 @@ from .modules import (
     SelfThinkModule
 )
 from .util import FormatConverter
+# ===== 新增：通用 JSONL 缓存工具 =====
+import os, json
+from contextlib import contextmanager
+
+try:
+    import fcntl
+    _HAS_FCNTL = True
+except Exception:
+    _HAS_FCNTL = False
+
+@contextmanager
+def _locked_append(path: str):
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    f = open(path, "a+", encoding="utf-8")
+    try:
+        if _HAS_FCNTL:
+            fcntl.flock(f, fcntl.LOCK_EX)
+        yield f
+    finally:
+        if _HAS_FCNTL:
+            fcntl.flock(f, fcntl.LOCK_UN)
+        f.close()
+
+def _load_jsonl_as_map(path: str, key: str = "id"):
+    m = {}
+    if not path or not os.path.exists(path):
+        return m
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+                k = obj.get(key)
+                if k is not None:
+                    m[k] = obj
+            except json.JSONDecodeError:
+                continue
+    return m
+
+def _append_jsonl(path: str, obj: dict):
+    with _locked_append(path) as f:
+        f.write(json.dumps(obj, ensure_ascii=False) + "\n")
 
 class FaithfulRAG:
-    """Faithful Retrieval-Augmented Generation pipeline"""
-    
     def __init__(
         self,
         backend_type: str,
@@ -25,6 +67,13 @@ class FaithfulRAG:
         similarity_model: str,
         mining_sampling_params: Optional[Dict] = None,
         generation_sampling_params: Optional[Dict] = None,
+        *,
+        # ===== 新增：阶段性缓存文件，可选 =====
+        knowledges_cache_path: Optional[str] = None,
+        contexts_cache_path: Optional[str] = None,
+        self_facts_cache_path: Optional[str] = None,
+        chunks_cache_path: Optional[str] = None,
+        predictions_cache_path: Optional[str] = None,
         **backend_config
     ):
         """
@@ -41,6 +90,11 @@ class FaithfulRAG:
         self.backend_type = backend_type
         self.model_name = model_name
         self.similarity_model = similarity_model
+        self.knowledges_cache_path = knowledges_cache_path
+        self.contexts_cache_path = contexts_cache_path
+        self.self_facts_cache_path = self_facts_cache_path
+        self.chunks_cache_path = chunks_cache_path
+        self.predictions_cache_path = predictions_cache_path
         
         # Set default sampling parameters if not provided
         self.mining_sampling_params = mining_sampling_params or {
@@ -93,20 +147,53 @@ class FaithfulRAG:
         params = {**self.mining_sampling_params, **mining_params}
         
         if fact_mining_type == "default":
-            # Generate initial knowledge facts
-            knowledges = await self.fact_mining_module.generate_knowledges(
-                dataset, **params
-            )
+                # ---------- 阶段 1：候选知识（knowledges） ----------
+            if self.knowledges_cache_path:
+                k_cache = _load_jsonl_as_map(self.knowledges_cache_path, key="id")
+                missing_ds_k = [ex for ex in dataset if ex['id'] not in k_cache]
+                if missing_ds_k:
+                    new_ks = await self.fact_mining_module.generate_knowledges(missing_ds_k, **params)
+                    for obj in new_ks:
+                        _append_jsonl(self.knowledges_cache_path, obj)
+                        k_cache[obj["id"]] = obj
+                knowledges = [k_cache[ex['id']] for ex in dataset if ex['id'] in k_cache]
+            else:
+                knowledges = await self.fact_mining_module.generate_knowledges(dataset, **params)
+
+            # ---------- 阶段 2：自我背景文（self_context） ----------
+            if self.contexts_cache_path:
+                c_cache = _load_jsonl_as_map(self.contexts_cache_path, key="id")
+                missing_ids_c = [ex['id'] for ex in dataset if ex['id'] not in c_cache]
+                if missing_ids_c:
+                    # 子集的 dataset & 对应的子集 knowledges，顺序与 dataset 保持一致
+                    sub_ds = [ex for ex in dataset if ex['id'] in missing_ids_c]
+                    k_map = {k['id']: k for k in knowledges}
+                    sub_k = [k_map[ex['id']] for ex in sub_ds]
+                    new_ctxs = await self.fact_mining_module.generate_self_context(sub_ds, knowledges=sub_k, **params)
+                    for obj in new_ctxs:
+                        _append_jsonl(self.contexts_cache_path, obj)
+                        c_cache[obj["id"]] = obj
+                self_context = [c_cache[ex['id']] for ex in dataset if ex['id'] in c_cache]
+            else:
+                self_context = await self.fact_mining_module.generate_self_context(dataset, knowledges=knowledges, **params)
+
+            # ---------- 阶段 3：抽取自洽事实（self_facts） ----------
+            if self.self_facts_cache_path:
+                f_cache = _load_jsonl_as_map(self.self_facts_cache_path, key="id")
+                # extract_facts 的输入是 contexts 列表；我们按 dataset 顺序检查缺失
+                missing_ids_f = [ctx['id'] for ctx in self_context if ctx['id'] not in f_cache]
+                if missing_ids_f:
+                    sub_ctxs = [ctx for ctx in self_context if ctx['id'] in missing_ids_f]
+                    new_facts = await self.fact_mining_module.extract_facts(sub_ctxs, **params)
+                    for obj in new_facts:
+                        _append_jsonl(self.self_facts_cache_path, obj)
+                        f_cache[obj["id"]] = obj
+                self_facts = [f_cache[ex['id']] for ex in dataset if ex['id'] in f_cache]
+            else:
+                self_facts = await self.fact_mining_module.extract_facts(self_context, **params)
+
+            return self_facts
             
-            # Generate self-context using the knowledge
-            self_context = await self.fact_mining_module.generate_self_context(
-                dataset, knowledges=knowledges, **params
-            )
-            
-            # Extract self-consistent facts from the context
-            return await self.fact_mining_module.extract_facts(
-                self_context, **params
-            )
         else:
             raise ValueError(f"Unsupported fact mining type: {fact_mining_type}")
     
@@ -131,15 +218,33 @@ class FaithfulRAG:
         Returns:
             List of dictionaries with top-k chunks
         """
-        # Get contextual chunks
-        contextual_chunks = self.contextual_alignment_module.get_contextual_chunks(
-            self_facts, dataset, sent_topk, chunk_size
-        )
-        
-        # Get top-k chunks
-        return self.contextual_alignment_module.get_topk_contextual_chunks(
-            contextual_chunks, chunk_topk
-        )
+        if not self.chunks_cache_path:
+            contextual_chunks = self.contextual_alignment_module.get_contextual_chunks(
+                self_facts, dataset, sent_topk, chunk_size
+            )
+            return self.contextual_alignment_module.get_topk_contextual_chunks(contextual_chunks, chunk_topk)
+
+        cache = _load_jsonl_as_map(self.chunks_cache_path, key="id")
+        have = set(cache.keys())
+        need_ids = [ex['id'] for ex in dataset if ex['id'] not in have]
+
+        if need_ids:
+            # 子集：与 ContextualAlignmentModule 约定顺序一致（zip）
+            sub_ds = [ex for ex in dataset if ex['id'] in need_ids]
+            f_map = {f['id']: f for f in self_facts}
+            sub_f = [f_map[ex['id']] for ex in sub_ds]
+
+            contextual_chunks = self.contextual_alignment_module.get_contextual_chunks(
+                sub_f, sub_ds, sent_topk, chunk_size
+            )
+            topk = self.contextual_alignment_module.get_topk_contextual_chunks(
+                contextual_chunks, chunk_topk
+            )
+            for item in topk:
+                _append_jsonl(self.chunks_cache_path, item)
+                cache[item["id"]] = item
+
+        return [cache[ex['id']] for ex in dataset if ex['id'] in cache]
     
     async def get_predictions(
         self,
@@ -163,22 +268,39 @@ class FaithfulRAG:
         # Use provided parameters or defaults
         params = {**self.generation_sampling_params, **generation_params}
         
+         # 选择对应的预测函数（保持原有三种）
         if generation_type == "normal_cot":
             params['response_format'] = {"type": "json_object"}
-            return await self.self_think_module.predict_answer_normal_cot(
-                dataset, facts, **params
-            )
+            runner = self.self_think_module.predict_answer_normal_cot
         elif generation_type == "scheduled_cot":
             params['response_format'] = {"type": "json_object"}
-            return await self.self_think_module.predict_answer_scheduled_cot(
-                dataset, facts, **params
-            )
+            runner = self.self_think_module.predict_answer_scheduled_cot
         elif generation_type == "wo_cot":
-            return await self.self_think_module.predict_answer_wo_cot(
-                dataset, facts, **params
-            )
+            runner = self.self_think_module.predict_answer_wo_cot
         else:
             raise ValueError(f"Unsupported generation type: {generation_type}")
+
+        # 不启用缓存：保持原行为
+        if not self.predictions_cache_path:
+            return await runner(dataset, facts, **params)
+
+        # 启用缓存：只对缺失 id 生成
+        cache = _load_jsonl_as_map(self.predictions_cache_path, key="id")
+        have = set(cache.keys())
+        need_ds = [ex for ex in dataset if ex['id'] not in have]
+
+        if need_ds:
+            # 需要把 facts 也对齐成与 need_ds 同序
+            f_map = {f['id']: f for f in facts}
+            need_facts = [f_map[ex['id']] for ex in need_ds]
+            new_pred = await runner(need_ds, need_facts, **params)  # 返回 {id: text}
+            for ex in need_ds:
+                rec = {"id": ex['id'], "prediction": new_pred.get(ex['id'], "")}
+                _append_jsonl(self.predictions_cache_path, rec)
+                cache[ex['id']] = rec
+
+        # 聚合成 {id: prediction}
+        return {ex['id']: cache[ex['id']]["prediction"] for ex in dataset if ex['id'] in cache}
     
     def evaluate(
         self, 

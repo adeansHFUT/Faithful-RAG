@@ -5,6 +5,10 @@ import json
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+os.environ.setdefault("NLTK_DATA", "/share/home/yangjj/nltk_data")
+
+import nltk
+nltk.data.path.append("/share/home/yangjj/nltk_data")
 
 from faithfulrag import FaithfulRAG  
 
@@ -16,9 +20,14 @@ async def main():
 
     # 2. Initialize FaithfulRAG pipeline
     rag = FaithfulRAG(
-        backend_type="hf",          # Using OpenAI backend
+        backend_type="hf",
         model_name="/share/home/yangjj/models/qwen2.5-7b-instruct",
-        similarity_model="/share/home/yangjj/models/bge-large-en-v1.5",  # Sentence Transformer model
+        similarity_model="/share/home/yangjj/models/bge-large-en-v1.5",
+        knowledges_cache_path="cache/knowledges.jsonl",
+        contexts_cache_path="cache/self_contexts.jsonl",
+        self_facts_cache_path="cache/self_facts.jsonl",
+        chunks_cache_path="cache/topk_chunks.jsonl",
+        predictions_cache_path="cache/preds.jsonl",
     )
     
     # 3. Generate self-consistent facts
