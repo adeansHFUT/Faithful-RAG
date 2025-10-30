@@ -281,20 +281,34 @@ class ContextualAlignmentModule:
             all_topk_chunks.append({'id': chunk['id'], 'topk_chunks': topk_chunks})
         return all_topk_chunks
 
-    def get_contextual_chunks(self,facts:List[Dict],dataset:Dataset,sent_topk=5,chunck_size=20):
+    def get_contextual_chunks(self, facts: List[Dict], dataset: Dataset,
+                          sent_topk: int = 5, chunck_size: int = 20):
+        # 1) 建索引，按 id 对齐
+        facts_map = {f["id"]: f for f in facts}
+
         all_chunks = []
-        for item,fact in zip(dataset,facts):
-            if len(fact['facts']) == 0:
-                print('No facts found')
-                continue
-            paragraph = FormatConverter.remove_brackets_and_content(item['context'])
-            results = self.calculate_similarity(paragraph, fact['facts'], top_k=sent_topk, chunk_size=chunck_size)
+        for item in dataset:
+            ex_id = item["id"]
+            fact = facts_map.get(ex_id, {"id": ex_id, "facts": []})
+
+            paragraph = FormatConverter.remove_brackets_and_content(item["context"])
             chunks = []
-            for _,match in results:
-                for chunk,score in match:
-                    chunks.append({'chunk':chunk,'score':score})
-            all_chunks.append({'id':fact['id'],'chunks':chunks})
+
+            if fact.get("facts"):
+                results = self.calculate_similarity(
+                    paragraph, fact["facts"], top_k=sent_topk, chunk_size=chunck_size
+                )
+                for _, match in results:
+                    for chunk, score in match:
+                        chunks.append({"chunk": chunk, "score": score})
+            else:
+                # 不要 continue；保留占位，保证与 dataset 一一对应
+                print(f"No facts found for {ex_id}")
+
+            all_chunks.append({"id": ex_id, "chunks": chunks})
+
         return all_chunks
+
 
 
 class SelfThinkModule:
